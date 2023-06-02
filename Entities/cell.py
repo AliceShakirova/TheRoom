@@ -4,8 +4,8 @@
 """
 
 from Entities.building import Building
-from Entities.EntityTypes import EntityTypes
-from Entities.FowMode import FowMode
+from Entities.entity_types import EntityTypes
+from Entities.fow_mode import FowMode
 
 
 class Cell:
@@ -68,7 +68,7 @@ class Cell:
         значения entity_type, необходимые для корректного отображения
         актуальной карты игры
         """
-        if self.entity == None:
+        if not self.entity:
             self.entity_type = EntityTypes.EMPTY
         elif self.entity == Building.ENTRY_POINT:
             self.entity_type = EntityTypes.ENTRY_POINT

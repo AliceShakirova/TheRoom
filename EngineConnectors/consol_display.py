@@ -4,8 +4,8 @@
 которое необходимо вывести игроку
 """
 from Entities.cell import Cell
-from Entities.FowMode import FowMode
-from Entities.EntityTypes import EntityTypes
+from Entities.fow_mode import FowMode
+from Entities.entity_types import EntityTypes
 from Entities.character import Character
 
 

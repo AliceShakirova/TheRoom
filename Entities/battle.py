@@ -26,8 +26,9 @@ if __name__ == '__main__':
     print('Damage:', a.damage, b.damage)
     print('Armor:', a.armor, b.armor)
     battle = Battle()
-    ghkg = battle.fight(a, b)
-    for score in ghkg[0]:
-        print(score)
-    # print(ghkg[1])
+    score = battle.fight(a, b)
+    num = score['score']
+    print(num)
+    print(score['bandit'] is b)
+    print(score['winner'] is a)
 

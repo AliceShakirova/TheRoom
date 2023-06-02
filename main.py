@@ -1,8 +1,8 @@
 from Controllers.khan_controller import KhanGameController
-from EngineConnectors.consolDisplay import consolDisplay
-from EngineConnectors.pyxelMode import PyxelDisplay
+from EngineConnectors.consol_display import consolDisplay
+from EngineConnectors.pyxel_controller import PyxelDisplay
 
 
 controller = KhanGameController()
-controller.start_new_game(2)
+controller.start_new_game(controller.last_frame.level)
 display = PyxelDisplay(controller)
