@@ -6,13 +6,13 @@ import unittest
 class TestBattle(unittest.TestCase):
     def test_fight_score(self):
         "Тест проверяет, что при обработке вычисляется верный счет"
-        wright = [(39, 12), (38, 4), (37, 0)]
+        correct_score = [(39, 12), (38, 4), (37, 0)]
         hero = Character(2, True)
         bandit = Character(1, False)
         battle = Battle()
         result = battle.fight(hero, bandit)['score']
 
-        self.assertEqual(result, wright)
+        self.assertEqual(result, correct_score)
 
     def test_fight_bandit(self):
         "Тест проверяет, что по ключу bandit располагается именно бандит"
