@@ -1,9 +1,19 @@
+"""Модуль описывает класс Battle, позволяющий проводить сражение между персонажами"""
 from Entities.character import Character
-
+from Entities.battle_result import BattleResult
 
 class Battle:
+    """Класс Battle используется для проведения сражений между персонажами
+        ----------
+        Method
+            fight(char1, char2)
+                проводит битву, возвращает счет, бандита и победителя
+
+    """
 
     def fight(self, char1, char2):
+        """Метод fight проводит битву, возвращает экземпляр класса Winner со счетом (score), бандитом (bandit) и
+        победителем(winner)"""
         score = []
         while char1 and char2:
             char1.health -= (char2.damage - char1.armor)
@@ -14,9 +24,9 @@ class Battle:
                 char2.health = 0
             score.append((char1.health, char2.health))
         if char2:
-            return {'score': score, 'bandit': char2, 'winner': char2}
+            return BattleResult(score, char2, char2)
         else:
-            return {'score': score, 'bandit': char2, 'winner': char1}
+            return BattleResult(score, char2, char1)
 
 
 if __name__ == '__main__':

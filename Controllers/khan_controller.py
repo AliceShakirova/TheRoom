@@ -92,7 +92,7 @@ class KhanGameController:
     battle = None
     smoke = True
     mode = None
-    winner = None
+    battle_result = None
     message = {MESSAGE_KEY: '', MESSAGE_MODE_KEY: OK}
     time_to_rescue = datetime.max
 
@@ -142,7 +142,7 @@ class KhanGameController:
             if button:
                 self.move_hero()
         self.last_frame = Frame(self.lvl, self.room, self.hero, self.mode, self.message, self.old_cell, self.new_cell,
-                                self.smoke, self.winner)
+                                self.smoke, self.battle_result)
 
     def get_current_frame(self):
         return self.last_frame
@@ -239,12 +239,12 @@ class KhanGameController:
             self.end_of_step()
             return
         elif self.step == self.BATTLE:
-            self.winner = self.battle.fight(self.hero, self.room[new_cell[0]][new_cell[1]].char_here)
+            self.battle_result = self.battle.fight(self.hero, self.room[new_cell[0]][new_cell[1]].char_here)
             self.mode = self.BATTLE
             self.step = self.BATTLE_END
             return
         elif self.step == self.BATTLE_END:
-            if self.hero.health == 0 or self.winner['winner'] != self.hero:
+            if self.hero.health == 0 or self.battle_result.winner != self.hero:
                 self.time_to_rescue = datetime.now() + timedelta(seconds=20)
                 self.mode = self.MAP
                 self.step = self.MOVE
@@ -255,49 +255,6 @@ class KhanGameController:
             return
         self.end_of_step()
 
-        """      
-        # Сценарий с бандитом
-        
-            continuer = input(self.ec.writer('На пути стоит бандит. Разберемся с ним? Ответ Y или N:'))
-            if continuer == 'N' or continuer == 'n':
-                return
-            elif continuer == 'Y' or continuer == 'y':
-                # self.ec.writer('BATTLE!!!')
-                win = self.battle.fight(self.hero, self.room[new_cell[0]][new_cell[1]].char_here)
-                for score in win[0]:
-                    self.ec.writer('%s' % score)
-                    time.sleep(1)
-                if win[1] is self.hero:
-                    self.ec.fighter('Наш герой')
-                    self.room.hero_cell = new_cell
-                    self.room[old_cell[0]][old_cell[1]].hero_here = False
-                    self.room[new_cell[0]][new_cell[1]].char_here = None
-                    self.room[new_cell[0]][new_cell[1]].hero_here = self.hero
-                    continuer = input(self.ec.writer('Принять? Нажмите любую кнопку'))
-                    if continuer:
-                        return
-                else:
-                    self.ec.fighter('Бандит')
-                    continuer = input(self.ec.writer('Сожалею, Вы проиграли. Или играем дальше? Ответ Y или N:'))
-                    if continuer == 'Y' or continuer == 'y':
-                        self.countdown(10)
-                        self.ec.writer('Продолжаем вечеринку!')
-                        time.sleep(2)
-                        self.hero.health += 10
-                        self.ec.draw(self.room, smoke=True)
-                        return
-                    else:
-                        continuer = input(self.ec.writer('Вы хотите закончить текущую игру? Ответ Y или N:'))
-                        if continuer == 'Y' or continuer == 'y':
-                            return 'Y'
-                        else:
-                            return
-            else:
-                self.ec.writer('Не понятно. Еще раз?')
-
-
-    # self.ec.draw(self.room, smoke=False)
-"""
     def step_move(self):
         # Сценарий с алтарем
         if self.room[self.new_cell[0]][self.new_cell[1]].entity_type == EntityTypes.ALTAR:

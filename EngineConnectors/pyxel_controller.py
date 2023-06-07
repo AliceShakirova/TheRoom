@@ -118,8 +118,8 @@ class PyxelDisplay:
             time.sleep(1)
             """
             hero_status = 'HERO\nHealth = {}/{}\n'.format(self.frame.hero.health, self.frame.hero.start_health)
-            bandit_status = 'BANDIT\nHealth = {}/{}\n'.format(self.frame.winner['bandit'].health,
-                                                              self.frame.winner['bandit'].start_health)
+            bandit_status = 'BANDIT\nHealth = {}/{}\n'.format(self.frame.battle_result.bandit.health,
+                                                              self.frame.battle_result.bandit.start_health)
             # Отрисовка бандита
             pyxel.rect(110, 7, 67, 20, 7)
             pyxel.rect(111, 8, 65, 18, 13)
@@ -134,7 +134,7 @@ class PyxelDisplay:
 
             pyxel.circ(50, 100, 30, 15)
 
-            score = self.frame.winner['score']
+            score = self.frame.battle_result.score
             pyxel.rectb(60, 30, 67, 28, 7)
             pyxel.rect(61, 31, 65, 26, 13)
             y = 33
