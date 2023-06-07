@@ -2,7 +2,7 @@
 """
 import random
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from Entities.frame import Frame
 from Entities.entity_types import EntityTypes
@@ -96,7 +96,6 @@ class KhanGameController:
     message = {MESSAGE_KEY: '', MESSAGE_MODE_KEY: OK}
     time_to_rescue = datetime.max
 
-    # Надо убрать last_frame, он заполняется только в одном месте, копиями данных контроллера
     def __init__(self):
         """
         Метод-конструктор, создающий объект, связывая его с определенным представителем EngineConnector
@@ -124,7 +123,7 @@ class KhanGameController:
         bandits = random.choices(self.room_creator.pointlist, k=(lvl * Character.ENEMY_COUNT_MULTIPLIER))
         for tup in bandits:
             if self.room[tup[0]][tup[1]].entity_type == EntityTypes.EMPTY:
-                self.room[tup[0]][tup[1]].char_here = Character(lvl-1, hero=False)
+                self.room[tup[0]][tup[1]].char_here = Character(lvl, hero=False)
         water_of_life = random.choices(self.room_creator.pointlist, k=(lvl * Character.ENEMY_COUNT_MULTIPLIER//2))
         for tup in water_of_life:
             if self.room[tup[0]][tup[1]].entity_type == EntityTypes.EMPTY and not self.room[tup[0]][tup[1]].char_here:
@@ -169,7 +168,6 @@ class KhanGameController:
 
         if self.new_cell[0] in list(range(self.room.side_len)) and self.new_cell[1] in list(range(self.room.side_len)):
             self.room[self.new_cell[0]][self.new_cell[1]].fow = FowMode.REVEALED
-            #time.sleep(0.2)
             self.move_hero()
             if self.step != self.END:
                 return
@@ -184,7 +182,7 @@ class KhanGameController:
             return
 
     def hero_live(self):
-        if self.time_to_rescue < datetime.now():
+        if self.time_to_rescue > datetime.now():
             self.mode = self.MESSAGE
             self.message[KhanGameController.MESSAGE_KEY] = 'Hero is defeat. He need a time...'
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.OK
@@ -227,7 +225,7 @@ class KhanGameController:
             self.step_move()
             return
         elif self.step == self.ALTAR:
-            self.altar_active(new_cell)
+            self.altar_activate(new_cell)
             self.end_of_step()
             return
         elif self.step == self.EXIT:
@@ -304,7 +302,7 @@ class KhanGameController:
         # Сценарий с алтарем
         if self.room[self.new_cell[0]][self.new_cell[1]].entity_type == EntityTypes.ALTAR:
             self.mode = self.MESSAGE
-            self.message[KhanGameController.MESSAGE_KEY] = 'Altar. Active?'
+            self.message[KhanGameController.MESSAGE_KEY] = 'Altar. Activate?'
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
             self.step = self.ALTAR
             return
@@ -339,7 +337,7 @@ class KhanGameController:
             self.step = self.END
             return
 
-    def altar_active(self, tup):
+    def altar_activate(self, tup):
         """
         Внутренний метод altar_active активирует алтари, вызывается из метода move_hero
         :param tup:

@@ -66,6 +66,8 @@ class PyxelDisplay:
             if self.number > 3 and self.prev_inputs == inputs:
                 self.number = 0
                 self.controller.process_key(inputs)
+        else:
+            self.number = 0
 
     def draw(self):
         self.frame = self.controller.get_current_frame()
