@@ -1,6 +1,13 @@
-
+"""Модуль описсывает класс-контейнер Room, его атрибуты и перегрузку некоторых операций"""
 
 class Room:
+    """Класс Room используется для взаимодействия с объектами расположенными на игровом поле
+        Methods
+        __iter__
+           полчуить объект итератора (rows) при вызове iter
+        __getitem__() и __setitem__
+           перегрузка операций индексирования и присваивания по индексу
+       """
     ACTIVE_ALL_ALTAR = 2
     rows = []
     entry_point = tuple()
@@ -8,11 +15,14 @@ class Room:
     active_altar = 0
     hero_cell = None
 
-    def __iter__(self):  # Получить объект итератора при вызове iter
+    def __iter__(self):
+        """Получить объект итератора (rows) при вызове iter"""
         return self.rows.__iter__()
 
     def __getitem__(self, index):
+        """Перегрузка операции индексирования для получения прямого доступа к атрибуту rows"""
         return self.rows[index]
 
     def __setitem__(self, index, value):
+        """Перегрузка операции присваивания по индексу для получения прямого доступа к атрибуту rows"""
         self.rows[index] = value

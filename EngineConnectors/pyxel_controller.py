@@ -1,5 +1,4 @@
-import time
-
+"""Модуль описывает класс PyxelDisplay, позволяющий использовать графичекий движок Pyxel для отображения игры"""
 import pyxel
 from Controllers.khan_controller import KhanGameController
 from Entities.room import Room
@@ -8,6 +7,24 @@ from Entities.fow_mode import FowMode
 
 
 class PyxelDisplay:
+    """Класс PyxelDisplay используется для взаимодействия основного контроллера с графическим движком
+    ----------
+    Attributes
+        controller : obj class KhanGameController, основной контроллер игры
+        frame : obj class Frame, содержит последние изменения в игре
+        map : obj class Room,  содержит основную карту
+        smoke : bool, режим отображения тумана
+        number : int, число нажатий на клавишу
+        prev_inputs : int, предыдущая нажатая клавиша
+    -------
+    Methods
+        __init__(controller)
+            метод-конструктор, привязывающий основной контроллер игры
+        update()
+            метод, принимающий введенную пользователем клавишу
+        draw()
+            метод, отрисовывающий конкретный кадр
+    """
     UP = 1
     DOWN = 2
     LEFT = 3
@@ -40,6 +57,7 @@ class PyxelDisplay:
         pyxel.run(self.update, self.draw)
 
     def update(self):
+        """Метод update принимает введенную пользователем клавишу"""
         # if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)
         if self.frame.mode == self.QUIT:
             pyxel.quit()
@@ -70,6 +88,7 @@ class PyxelDisplay:
             self.number = 0
 
     def draw(self):
+        """Метод draw отрисовывает конкретный кадр"""
         self.frame = self.controller.get_current_frame()
         if self.frame.mode in [self.MAP, self.MESSAGE]:
             pyxel.cls(0)

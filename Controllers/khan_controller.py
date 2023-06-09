@@ -1,4 +1,4 @@
-"""Модуль khan_controller описывает основной класс KhanGameController, позволяющий взаимодействовать с игрой
+"""Модуль khan_controller описывает основной класс KhanGameController, обрабатывающий всю игровую логику.
 """
 import random
 import time
@@ -15,41 +15,25 @@ from Entities.room import Room
 
 
 class KhanGameController:
-    """Класс KhanGameController используется для взаимодействия с объектами,
-    расположенными на игровом поле
-
-    Основное применение - в классе Room и контроллере игры
-
-    Note:
-        В перспективе планируется использовать атрибут terrain,
-        описывающий ландшафт на ячейке (пример: вода, земля, гора и т.д.
-
-    Attributes
+    """Класс KhanGameController обрабатывает всю игровую логику
     ----------
-    lvl : int
-        уровень комнаты, от которого зависят размеры комнаты, количество и параметры персонажей
-    room : list
-        список списков, представляющий собой основную карту
-    hero : object class Character
-        основной персонаж игры
-    ec : object
-        интерфейс для EngineConnector
-    battle :  object class Battle
-        интерфейс для проведения сражений между героем и бандитами
-
-    Methods
+    Attributes
+        lvl - int, уровень комнаты, от которого зависят размеры комнаты, количество и параметры персонажей
+        room - object class Room, список списков, основная карта
+        hero - object class Character, основной персонаж игры
+        battle - object class Battle, интерфейс для проведения боя
+        smoke - bool, флаг, определяющий, отображается туман или нет
+        mode - int, режим отрисовки
+        battle_result - object class BattleResult, содержит итоги боя
+        message - dict, содержит сообщение и кнопки для messagebox
     -------
-    __init__(eс)
-       метод-конструктор, создающий объект, связывая его с определенным представителем EngineConnector
-     start_new_game(lvl)
-        метод начинает новую игру, инициирует создание основной карты(room), основного персонажа(hero),
-        генерацию и размещение бандитов (Character(lvl, hero=False)) и источников живой воды (water_of_life)
-    move_hero(direction)
-        метод производит сдвиг основного персонажа на одну клетку в выбранном (direction) направлении
-    altar_active(tup)
-        внутренний метод, активирующий алтари, вызывается из метода move_hero
-    countdown(num_of_secs)
-        внутренний метод-таймер, вызывается из метода move_hero
+    Methods
+        start_new_game(lvl)
+            метод начинает новую игру, инициирует создание всех ключевых объектов
+        process_key(button):
+            метод передает нажатую кнопку на обработку в нужный метод, а затем фиксирует все произведенные изменения
+        get_current_frame():
+            метод вызывается из контроллера графического интерфейса для получения последних изменений для отрисовки кадра
     """
     # Кнопки управления
     UP = 1
@@ -88,7 +72,6 @@ class KhanGameController:
     room = None
     hero = None
     start_health = 0
-    view = None
     battle = None
     smoke = True
     mode = None
@@ -109,8 +92,9 @@ class KhanGameController:
         self.room_creator = RoomCreator()
 
     def start_new_game(self, lvl):
-        """Метод start_new_game начинает новую игру, инициирует создание основной карты(room), основного персонажа(hero),
-        генерацию и размещение бандитов
+        """Метод start_new_game начинает новую игру, инициирует создание основной карты (room), основного
+        персонажа (hero), генерацию и размещение бандитов
+        :parameter lvl: int, уровень карты
         """
         self.room = RoomCreator.get_room(self.room_creator, lvl)
         self.hero = Character(lvl)
@@ -128,12 +112,15 @@ class KhanGameController:
         for tup in water_of_life:
             if self.room[tup[0]][tup[1]].entity_type == EntityTypes.EMPTY and not self.room[tup[0]][tup[1]].char_here:
                 self.room[tup[0]][tup[1]].entity = Building.WATER_OF_LIFE
-                self.room[tup[0]][tup[1]].get_entity_type()
+                self.room[tup[0]][tup[1]].update_entity_type()
         self.mode = self.MAP
         self.last_frame = Frame(self.lvl, self.room, self.hero, self.mode, self.message, self.old_cell, self.new_cell,
                                 self.smoke)
 
     def process_key(self, button, message=None):
+        """Метод process_key в зависимости от режима отрисовки (mode) передает нажатую кнопку в нужный метод, а затем
+        фиксирует все произведенные изменения в виде Frame
+        :parameter button: int, соответствует введенной пользователем клавише"""
         if self.mode == self.MAP:
             self.new_move(button)
         elif self.mode == self.MESSAGE:
@@ -145,9 +132,13 @@ class KhanGameController:
                                 self.smoke, self.battle_result)
 
     def get_current_frame(self):
+        """Метод get_current_frame вызывается из контроллера графического интерфейса для получения последних изменений
+        для непосредственной отрисовки кадра"""
         return self.last_frame
 
     def get_cell_to_move(self, button):
+        """Метод get_cell_to_move в зависимости от полученной кнопки находит ячейку, куда перемещается герой
+        :parameter button : int, соответствует введенной пользователем клавише"""
         if button == self.UP:
             self.new_cell = ((self.old_cell[0] - 1), self.old_cell[1])
         elif button == self.LEFT:
@@ -160,6 +151,7 @@ class KhanGameController:
             return
 
     def new_move(self, button):
+        """Метод nem_move в случае жизнеспособности героя и невхождения героя в стенку, запускает новый ход"""
         if self.hero.health == 0:
             self.hero_live()
             return
@@ -182,6 +174,7 @@ class KhanGameController:
             return
 
     def hero_live(self):
+        """Метод hero_live в случае наступления нужного времени (time_to_rescue) оживляет героя"""
         if self.time_to_rescue > datetime.now():
             self.mode = self.MESSAGE
             self.message[KhanGameController.MESSAGE_KEY] = 'Hero is defeat. He need a time...'
@@ -193,6 +186,8 @@ class KhanGameController:
             return
 
     def process_messagebox_key(self, button):
+        """Метод process_messagebox_key в зависимости от режима кнопок и введенной кнопки выбирает следующее действие
+        :parameter button : int, соответствует введенной пользователем клавише"""
         if self.message[KhanGameController.MESSAGE_MODE_KEY] == self.OK:
             if button == self.ENTER:
                 self.move_hero()
@@ -220,6 +215,7 @@ class KhanGameController:
                 self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
 
     def move_hero(self):
+        """Метод move_hero в завивисимости от атрибута step выбирает следующее действие"""
         new_cell = self.new_cell
         if self.step == self.MOVE:
             self.step_move()
@@ -256,6 +252,7 @@ class KhanGameController:
         self.end_of_step()
 
     def step_move(self):
+        """Метод step_move в зависимости от entity_type полученной ячейки выбирает следующее действие"""
         # Сценарий с алтарем
         if self.room[self.new_cell[0]][self.new_cell[1]].entity_type == EntityTypes.ALTAR:
             self.mode = self.MESSAGE
@@ -295,22 +292,21 @@ class KhanGameController:
             return
 
     def altar_activate(self, tup):
-        """
-        Внутренний метод altar_active активирует алтари, вызывается из метода move_hero
-        :param tup:
-        :return:
+        """Внутренний метод altar_activate активирует алтари, вызывается из метода move_hero
+        :param tup: tuple, ячейка, на которой необходимо автивировать алтарь
         """
         if self.room[tup[0]][tup[1]].entity == Building.ALTAR:
             self.room[tup[0]][tup[1]].entity = Building.ACTIVE_ALTAR
             self.room.active_altar += 1
 
     def end_of_step(self):
+        """Метод end_of_step производит все необходимые действия для начала нового хода"""
         self.step = self.MOVE
         self.room.hero_cell = self.new_cell
         self.room[self.last_frame.old_cell[0]][self.last_frame.old_cell[1]].hero_here = False
         self.room[self.new_cell[0]][self.new_cell[1]].hero_here = self.hero
-        self.room[self.last_frame.old_cell[0]][self.last_frame.old_cell[1]].get_entity_type()
-        self.room[self.new_cell[0]][self.new_cell[1]].get_entity_type()
+        self.room[self.last_frame.old_cell[0]][self.last_frame.old_cell[1]].update_entity_type()
+        self.room[self.new_cell[0]][self.new_cell[1]].update_entity_type()
         self.old_cell = self.new_cell
         self.mode = self.MAP
 

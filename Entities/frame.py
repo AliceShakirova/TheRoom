@@ -1,3 +1,5 @@
+"""Модуль описывает класс-контейнер Frame, его метод-конструктор и атрибуты"""
+
 class Frame:
     # Режимы отрисовки
     MENU = 0
@@ -12,8 +14,7 @@ class Frame:
     OK = 2
 
     def __init__(self, lvl=int, room=None, hero=None, mode=None, message={}, old_cell=None, new_cell=None, smoke=True,
-                 winner=None):
-
+                 battle_result=None):
     # В дальнейшем этот атрибут будет браться из меню или по прохождении уровней обновляться, пока так
         self.level = lvl
         self.room = room
@@ -23,4 +24,4 @@ class Frame:
         self.message = message
         self.old_cell = old_cell
         self.new_cell = new_cell
-        self.winner = winner
+        self.battle_result = battle_result

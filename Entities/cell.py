@@ -9,37 +9,13 @@ from Entities.fow_mode import FowMode
 
 
 class Cell:
-    """Класс Cell используется для взаимодействия с объектами,
-    расположенными на игровом поле
+    """Класс Cell используется для взаимодействия с объектами расположенными на игровом поле
 
-    Основное применение - в классе Room и контроллере игры
-
-    Note:
-        В перспективе планируется использовать атрибут terrain,
-        описывающий ландшафт на ячейке (пример: вода, земля, гора и т.д.
-
-    Attributes
-    ----------
-    fow : int
-        покрыта ячейка туманом (1) или нет (0)
-    entity_type : int
-        тип объекта Building, расположенного в ячейке
-    entity : object
-        непосредственно объект, расположенный в ячейке
-    char_here : bool
-        наличие персонажа (бандита)
-    hero_here : bool
-        наличие перемещающегося героя
-    terrain : int
-        ландшафт
-
-        Methods
-        -------
         __init__(entity, fow=FowMode.SHOWED, hero_here=False, terrain=None)
             метод-конструктор, создающий ячейку
-        get_entity_type()
+        update_entity_type()
             обновляет entity_type в соответствии с полученными entity
-        """
+    """
 
     fow = None                  # покрыто туманом (1) или нет (0)
     entity_type = None          # что расположено на ячейке
@@ -51,22 +27,20 @@ class Cell:
     def __init__(self, entity, fow=FowMode.SHOWED, hero_here=False, terrain=None):
         """
         Конструктор, создающий ячейку с объектом Building внутри или пустую (Empty)
-        :param entity:
-        :param fow:
-        :param hero_here:
-        :param terrain:
+        :parameter entity: непосредственно расположенный объект
+        :parameter fow: покрыто тумано (1) или нет (0)
+        :parameter hero_here: наличие героя (по умолчанию False)
+        :parameter terrain: ландшафт (в перспективе)
         """
         self.entity = entity
         self.fow = fow
         self.hero_here = hero_here
-        self.get_entity_type()
+        self.update_entity_type()
         # self.terrain = terrain
 
-    def get_entity_type(self):
-        """
-        Метод get_entity_type в соответствии с атрибутом entity обноваляет
-        значения entity_type, необходимые для корректного отображения
-        актуальной карты игры
+    def update_entity_type(self):
+        """Метод update_entity_type в соответствии с атрибутом entity обновляет значения entity_type, необходимые для
+        корректного отображения актуальной карты игры
         """
         if not self.entity:
             self.entity_type = EntityTypes.EMPTY

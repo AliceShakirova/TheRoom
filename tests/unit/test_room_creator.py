@@ -1,3 +1,5 @@
+"""Тест-комплект тестирует метод класса RoomCreator"""
+
 from Entities.room_creator import RoomCreator
 from Entities.building import Building
 import unittest
@@ -5,7 +7,7 @@ import unittest
 
 class TestRoomCreator(unittest.TestCase):
     def test_positive_room(self):
-
+        """Тест проверяет, что при создании комнаты генерируется необходимое количество ключевых элементов"""
         correct_buildings = {Building.ENTRY_POINT: 1, Building.EXIT: 1, Building.ALTAR: 2}
         room_creator = RoomCreator()
         test_room = RoomCreator.get_room(room_creator, 2)

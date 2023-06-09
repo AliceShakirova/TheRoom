@@ -34,7 +34,7 @@ class consolDisplay:
         for row in map:
             print('\n')
             for obj in row:
-                obj.get_entity_type()
+                obj.update_entity_type()
                 if obj.hero_here:
                     print('H', end='  ')
                 elif smoke and obj.fow == FowMode.SHOWED:
