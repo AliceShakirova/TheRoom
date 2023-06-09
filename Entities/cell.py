@@ -38,6 +38,11 @@ class Cell:
         self.update_entity_type()
         # self.terrain = terrain
 
+    def __setattr__(self, name, value):
+        super().__setattr__(name, value)
+        if name == 'entity':
+            self.update_entity_type()
+
     def update_entity_type(self):
         """Метод update_entity_type в соответствии с атрибутом entity обновляет значения entity_type, необходимые для
         корректного отображения актуальной карты игры
@@ -62,4 +67,5 @@ class Cell:
 
 if __name__ == '__main__':
     cell = Cell(Building.EXIT, FowMode.REVEALED)
+    cell.entity = Building.ALTAR
     print(cell.fow.name, ':', cell.entity.name)

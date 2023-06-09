@@ -99,20 +99,20 @@ class KhanGameController:
         self.room = RoomCreator.get_room(self.room_creator, lvl)
         self.hero = Character(lvl)
         self.start_health = self.hero.start_health
-        self.room[self.room.entry_point[0]][self.room.entry_point[1]].hero_here = self.hero
-        self.room.hero_cell = (self.room.entry_point[0], self.room.entry_point[1])
-        self.old_cell = (self.room.hero_cell[0], self.room.hero_cell[1])
+        self.room[self.room.entry_point].hero_here = self.hero
+        self.room.hero_cell = self.room.entry_point
+        self.old_cell = self.room.hero_cell
 
         # Генерация и размещение бандитов и источников живой воды
         bandits = random.choices(self.room_creator.pointlist, k=(lvl * Character.ENEMY_COUNT_MULTIPLIER))
         for tup in bandits:
-            if self.room[tup[0]][tup[1]].entity_type == EntityTypes.EMPTY:
-                self.room[tup[0]][tup[1]].char_here = Character(lvl, hero=False)
-        water_of_life = random.choices(self.room_creator.pointlist, k=(lvl * Character.ENEMY_COUNT_MULTIPLIER//2))
+            if self.room[tup].entity_type == EntityTypes.EMPTY:
+                self.room[tup].char_here = Character(lvl, hero=False)
+        water_of_life = random.choices(self.room_creator.pointlist, k=(lvl * Character.ENEMY_COUNT_MULTIPLIER // 2))
         for tup in water_of_life:
-            if self.room[tup[0]][tup[1]].entity_type == EntityTypes.EMPTY and not self.room[tup[0]][tup[1]].char_here:
-                self.room[tup[0]][tup[1]].entity = Building.WATER_OF_LIFE
-                self.room[tup[0]][tup[1]].update_entity_type()
+            if self.room[tup].entity_type == EntityTypes.EMPTY and not self.room[tup].char_here:
+                self.room[tup].entity = Building.WATER_OF_LIFE
+                self.room[tup].update_entity_type()
         self.mode = self.MAP
         self.last_frame = Frame(self.lvl, self.room, self.hero, self.mode, self.message, self.old_cell, self.new_cell,
                                 self.smoke)
@@ -159,7 +159,7 @@ class KhanGameController:
             self.get_cell_to_move(button)
 
         if self.new_cell[0] in list(range(self.room.side_len)) and self.new_cell[1] in list(range(self.room.side_len)):
-            self.room[self.new_cell[0]][self.new_cell[1]].fow = FowMode.REVEALED
+            self.room[self.new_cell].fow = FowMode.REVEALED
             self.move_hero()
             if self.step != self.END:
                 return
@@ -230,12 +230,12 @@ class KhanGameController:
             return
 
         elif self.step == self.WATER:
-            self.room[new_cell[0]][new_cell[1]].entity = None
+            self.room[new_cell].entity = None
             self.hero.health = self.start_health
             self.end_of_step()
             return
         elif self.step == self.BATTLE:
-            self.battle_result = self.battle.fight(self.hero, self.room[new_cell[0]][new_cell[1]].char_here)
+            self.battle_result = self.battle.fight(self.hero, self.room[new_cell].char_here)
             self.mode = self.BATTLE
             self.step = self.BATTLE_END
             return
@@ -254,7 +254,7 @@ class KhanGameController:
     def step_move(self):
         """Метод step_move в зависимости от entity_type полученной ячейки выбирает следующее действие"""
         # Сценарий с алтарем
-        if self.room[self.new_cell[0]][self.new_cell[1]].entity_type == EntityTypes.ALTAR:
+        if self.room[self.new_cell].entity_type == EntityTypes.ALTAR:
             self.mode = self.MESSAGE
             self.message[KhanGameController.MESSAGE_KEY] = 'Altar. Activate?'
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
@@ -262,7 +262,7 @@ class KhanGameController:
             return
 
         # Сценарий с выходом
-        elif self.room[self.new_cell[0]][self.new_cell[1]].entity_type == EntityTypes.EXIT:
+        elif self.room[self.new_cell].entity_type == EntityTypes.EXIT:
             if self.room.active_altar == self.room.ACTIVE_ALL_ALTAR:
                 self.mode = self.MESSAGE
                 self.message[KhanGameController.MESSAGE_KEY] = 'Finish?'
@@ -273,21 +273,21 @@ class KhanGameController:
                 self.step = self.END
                 return
         # Сценарий с живой водой
-        elif self.room[self.new_cell[0]][self.new_cell[1]].entity_type == EntityTypes.WATER_OF_LIFE:
+        elif self.room[self.new_cell].entity_type == EntityTypes.WATER_OF_LIFE:
             self.mode = self.MESSAGE
             self.message[KhanGameController.MESSAGE_KEY] = 'Water of life. Drink?'
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
             self.step = self.WATER
             return
         # Сценарий с бандитом
-        elif self.room[self.new_cell[0]][self.new_cell[1]].char_here:
+        elif self.room[self.new_cell].char_here:
             self.mode = self.MESSAGE
             self.message[KhanGameController.MESSAGE_KEY] = 'Bandit. Battle?'
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
             self.step = self.BATTLE
             return
         # Сценарий с пустой ячейкой
-        elif self.room[self.new_cell[0]][self.new_cell[1]].entity_type == EntityTypes.EMPTY:
+        elif self.room[self.new_cell].entity_type == EntityTypes.EMPTY:
             self.step = self.END
             return
 
@@ -295,18 +295,16 @@ class KhanGameController:
         """Внутренний метод altar_activate активирует алтари, вызывается из метода move_hero
         :param tup: tuple, ячейка, на которой необходимо автивировать алтарь
         """
-        if self.room[tup[0]][tup[1]].entity == Building.ALTAR:
-            self.room[tup[0]][tup[1]].entity = Building.ACTIVE_ALTAR
+        if self.room[tup].entity == Building.ALTAR:
+            self.room[tup].entity = Building.ACTIVE_ALTAR
             self.room.active_altar += 1
 
     def end_of_step(self):
         """Метод end_of_step производит все необходимые действия для начала нового хода"""
         self.step = self.MOVE
         self.room.hero_cell = self.new_cell
-        self.room[self.last_frame.old_cell[0]][self.last_frame.old_cell[1]].hero_here = False
-        self.room[self.new_cell[0]][self.new_cell[1]].hero_here = self.hero
-        self.room[self.last_frame.old_cell[0]][self.last_frame.old_cell[1]].update_entity_type()
-        self.room[self.new_cell[0]][self.new_cell[1]].update_entity_type()
+        self.room[self.last_frame.old_cell].hero_here = False
+        self.room[self.new_cell].hero_here = self.hero
         self.old_cell = self.new_cell
         self.mode = self.MAP
 

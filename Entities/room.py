@@ -21,8 +21,8 @@ class Room:
 
     def __getitem__(self, index):
         """Перегрузка операции индексирования для получения прямого доступа к атрибуту rows"""
-        return self.rows[index]
+        return self.rows[index[0]][index[1]]
 
     def __setitem__(self, index, value):
         """Перегрузка операции присваивания по индексу для получения прямого доступа к атрибуту rows"""
-        self.rows[index] = value
+        self.rows[index[0]][index[1]] = value
