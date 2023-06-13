@@ -2,13 +2,13 @@
 from Entities.character import Character
 from Entities.battle_result import BattleResult
 
+
 class Battle:
     """Класс Battle используется для проведения сражений между персонажами
         ----------
         Method
             fight(char1, char2)
                 проводит битву, возвращает счет, бандита и победителя
-
     """
 
     def fight(self, char1, char2):

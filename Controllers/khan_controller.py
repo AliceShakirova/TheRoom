@@ -35,6 +35,8 @@ class KhanGameController:
         get_current_frame():
             метод вызывается из контроллера графического интерфейса для получения последних изменений для отрисовки кадра
     """
+
+    # Constants
     # Кнопки управления
     UP = 1
     DOWN = 2
@@ -68,6 +70,7 @@ class KhanGameController:
     MESSAGE_KEY = 0
     MESSAGE_MODE_KEY = 1
 
+    # attrs
     lvl = 0
     room = None
     hero = None
@@ -159,19 +162,42 @@ class KhanGameController:
             self.get_cell_to_move(button)
 
         if self.new_cell[0] in list(range(self.room.side_len)) and self.new_cell[1] in list(range(self.room.side_len)):
-            self.room[self.new_cell].fow = FowMode.REVEALED
-            self.move_hero()
-            if self.step != self.END:
+            if self.check_bandits_nearby() and self.room[self.new_cell].fow == FowMode.SHOWED:
+                self.step = self.NEW_STEP
+                self.mode = self.MESSAGE
+                self.message = {self.MESSAGE_KEY: 'The bandit is nearby\n and he is vigilant',
+                                self.MESSAGE_MODE_KEY: self.OK}
                 return
             else:
-                self.end_of_step()
-                return
+                self.room[self.new_cell].fow = FowMode.REVEALED
+                self.move_hero()
+                if self.step != self.END:
+                    return
+                else:
+                    self.end_of_step()
+                    return
         else:
             self.step = self.NEW_STEP
             self.mode = self.MESSAGE
-            self.message = {KhanGameController.MESSAGE_KEY: 'Outside the playing field',
+            self.message = {KhanGameController.MESSAGE_KEY: 'You can\'t leave the\n playing field',
                             KhanGameController.MESSAGE_MODE_KEY: self.OK}
             return
+
+    def check_bandits_nearby(self):
+        adjacent_cell_coords = [(self.new_cell[0] + 1, self.new_cell[1]),
+                                (self.new_cell[0], self.new_cell[1] + 1),
+                                (self.new_cell[0] - 1, self.new_cell[1]),
+                                (self.new_cell[0], self.new_cell[1] - 1)]
+        valid_adjacent_cells_coords = []
+        for cell_coord in adjacent_cell_coords:
+            if cell_coord[0] in list(range(self.room.side_len)) and cell_coord[1] in list(range(self.room.side_len)):
+                valid_adjacent_cells_coords.append(self.room[cell_coord])
+        for cell in valid_adjacent_cells_coords:
+            if cell.fow == FowMode.REVEALED and cell.char_here:
+                return True
+            else:
+                continue
+        return False
 
     def hero_live(self):
         """Метод hero_live в случае наступления нужного времени (time_to_rescue) оживляет героя"""
@@ -208,7 +234,10 @@ class KhanGameController:
                 self.message[KhanGameController.MESSAGE_MODE_KEY] = self.NO
         if self.message[KhanGameController.MESSAGE_MODE_KEY] == self.NO:
             if button == self.ENTER:
-                self.step = self.END
+                if self.step == self.BATTLE:
+                    self.mode = self.MAP
+                    self.step = self.MOVE
+                    return
                 self.end_of_step()
             if button == self.LEFT:
                 self.mode = self.MESSAGE
@@ -287,7 +316,9 @@ class KhanGameController:
             self.step = self.BATTLE
             return
         # Сценарий с пустой ячейкой
-        elif self.room[self.new_cell].entity_type == EntityTypes.EMPTY:
+        elif self.room[self.new_cell].entity_type == EntityTypes.EMPTY \
+                or self.room[self.new_cell].entity_type == EntityTypes.ACTIVE_ALTAR\
+                or self.room[self.new_cell].entity_type == EntityTypes.ENTRY_POINT:
             self.step = self.END
             return
 
