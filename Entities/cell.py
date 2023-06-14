@@ -22,6 +22,7 @@ class Cell:
     entity = None               # непосредственно объект
     char_here = None            # наличие персонажа
     hero_here = None            # наличие перемещающегося героя
+    blocked_by_enemy = []       # наличие бандита на соседней клетке
     # terrain = None            # ландшафт
 
     def __init__(self, entity, fow=FowMode.SHOWED, hero_here=False, terrain=None):
@@ -35,6 +36,7 @@ class Cell:
         self.entity = entity
         self.fow = fow
         self.hero_here = hero_here
+        self.blocked_by_enemy = []
         self.update_entity_type()
         # self.terrain = terrain
 
@@ -61,9 +63,7 @@ class Cell:
             self.entity_type = EntityTypes.WATER_OF_LIFE
 
 
-
 # Самотестирование в случае запуска напрямую
-
 
 if __name__ == '__main__':
     cell = Cell(Building.EXIT, FowMode.REVEALED)

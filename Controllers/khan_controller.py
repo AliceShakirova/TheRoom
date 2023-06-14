@@ -11,6 +11,7 @@ from Entities.battle import Battle
 from Entities.building import Building
 from Entities.character import Character
 from Entities.room_creator import RoomCreator
+from Entities.drawing_cell import DrawingCell
 from Entities.room import Room
 
 
@@ -111,14 +112,13 @@ class KhanGameController:
         for tup in bandits:
             if self.room[tup].entity_type == EntityTypes.EMPTY:
                 self.room[tup].char_here = Character(lvl, hero=False)
+                self.get_blocked_cell(tup, self.room[tup].char_here)
         water_of_life = random.choices(self.room_creator.pointlist, k=(lvl * Character.ENEMY_COUNT_MULTIPLIER // 2))
         for tup in water_of_life:
             if self.room[tup].entity_type == EntityTypes.EMPTY and not self.room[tup].char_here:
                 self.room[tup].entity = Building.WATER_OF_LIFE
-                self.room[tup].update_entity_type()
         self.mode = self.MAP
-        self.last_frame = Frame(self.lvl, self.room, self.hero, self.mode, self.message, self.old_cell, self.new_cell,
-                                self.smoke)
+        self.last_frame = self.get_last_frame()
 
     def process_key(self, button, message=None):
         """Метод process_key в зависимости от режима отрисовки (mode) передает нажатую кнопку в нужный метод, а затем
@@ -131,12 +131,55 @@ class KhanGameController:
         elif self.mode == self.BATTLE:
             if button:
                 self.move_hero()
-        self.last_frame = Frame(self.lvl, self.room, self.hero, self.mode, self.message, self.old_cell, self.new_cell,
-                                self.smoke, self.battle_result)
+        self.last_frame = self.get_last_frame()
 
     def get_current_frame(self):
         """Метод get_current_frame вызывается из контроллера графического интерфейса для получения последних изменений
         для непосредственной отрисовки кадра"""
+        return self.last_frame
+
+    def get_last_frame(self):
+        room = []
+        x = 0
+        for row in self.room:
+            room.append([])
+            y = 0
+            for cell in row:
+                room[x].append(DrawingCell())
+                building = None
+                unit = None
+                if cell.entity_type == EntityTypes.ENTRY_POINT:
+                    building = Frame.ENTRY_POINT
+                elif self.smoke and cell.fow == FowMode.SHOWED:
+                    building = Frame.FOW
+                else:
+                    if cell.entity_type == EntityTypes.EMPTY:
+                        building = Frame.EMPTY
+                    elif cell.entity_type == EntityTypes.EXIT:
+                        building = Frame.EXIT
+                    elif cell.entity_type == EntityTypes.ALTAR:
+                        building = Frame.ALTAR
+                    elif cell.entity_type == EntityTypes.ACTIVE_ALTAR:
+                        building = Frame.ACTIVE_ALTAR
+                    elif cell.entity_type == EntityTypes.WATER_OF_LIFE:
+                        building = Frame.WATER_OF_LIFE
+                if cell.hero_here:
+                    unit = Frame.HERO
+                elif cell.char_here and (cell.fow == FowMode.REVEALED or not self.smoke):
+                    unit = Frame.BANDIT
+                elif cell.blocked_by_enemy:
+                    for enemy in cell.blocked_by_enemy:
+                        if cell.fow == FowMode.SHOWED:
+                            if enemy in self.room.discovered_bandits:
+                                unit = Frame.FOW_BLOCKED
+                                break
+                room[x][y].building = building
+                room[x][y].unit = unit
+                y += 1
+            x += 1
+
+        self.last_frame = Frame(self.lvl, room, self.hero, self.mode, self.message, self.old_cell, self.new_cell,
+                                self.smoke, self.battle_result)
         return self.last_frame
 
     def get_cell_to_move(self, button):
@@ -162,20 +205,28 @@ class KhanGameController:
             self.get_cell_to_move(button)
 
         if self.new_cell[0] in list(range(self.room.side_len)) and self.new_cell[1] in list(range(self.room.side_len)):
-            if self.check_bandits_nearby() and self.room[self.new_cell].fow == FowMode.SHOWED:
-                self.step = self.NEW_STEP
-                self.mode = self.MESSAGE
-                self.message = {self.MESSAGE_KEY: 'The bandit is nearby\n and he is vigilant',
-                                self.MESSAGE_MODE_KEY: self.OK}
+            enemy_discovered = None
+            if self.room[self.new_cell].blocked_by_enemy:
+                for enemy in self.room[self.new_cell].blocked_by_enemy:
+                    if enemy in self.room.discovered_bandits:
+                        enemy_discovered = True
+                        break
+                    else:
+                        enemy_discovered = False
+                if self.room[self.new_cell].fow == FowMode.SHOWED and enemy_discovered:
+                    self.step = self.NEW_STEP
+                    self.mode = self.MESSAGE
+                    self.message = {self.MESSAGE_KEY: 'The bandit is nearby\n and he is vigilant',
+                                    self.MESSAGE_MODE_KEY: self.OK}
+                    return
+
+            self.room[self.new_cell].fow = FowMode.REVEALED
+            self.move_hero()
+            if self.step != self.END:
                 return
             else:
-                self.room[self.new_cell].fow = FowMode.REVEALED
-                self.move_hero()
-                if self.step != self.END:
-                    return
-                else:
-                    self.end_of_step()
-                    return
+                self.end_of_step()
+                return
         else:
             self.step = self.NEW_STEP
             self.mode = self.MESSAGE
@@ -183,27 +234,23 @@ class KhanGameController:
                             KhanGameController.MESSAGE_MODE_KEY: self.OK}
             return
 
-    def check_bandits_nearby(self):
-        adjacent_cell_coords = [(self.new_cell[0] + 1, self.new_cell[1]),
-                                (self.new_cell[0], self.new_cell[1] + 1),
-                                (self.new_cell[0] - 1, self.new_cell[1]),
-                                (self.new_cell[0], self.new_cell[1] - 1)]
+    def get_blocked_cell(self, tup, bandit):
+        """Метод вычисляет, какие клетки будут охранятся бандитами,в случае обнаружения"""
+        adjacent_cell_coords = [(tup[0] + 1, tup[1]),
+                                (tup[0], tup[1] + 1),
+                                (tup[0] - 1, tup[1]),
+                                (tup[0], tup[1] - 1)]
         valid_adjacent_cells_coords = []
         for cell_coord in adjacent_cell_coords:
             if cell_coord[0] in list(range(self.room.side_len)) and cell_coord[1] in list(range(self.room.side_len)):
                 valid_adjacent_cells_coords.append(self.room[cell_coord])
-        for cell in valid_adjacent_cells_coords:
-            if cell.fow == FowMode.REVEALED and cell.char_here:
-                return True
-            else:
-                continue
-        return False
+                self.room[cell_coord].blocked_by_enemy.append(bandit)
 
     def hero_live(self):
         """Метод hero_live в случае наступления нужного времени (time_to_rescue) оживляет героя"""
         if self.time_to_rescue > datetime.now():
             self.mode = self.MESSAGE
-            self.message[KhanGameController.MESSAGE_KEY] = 'Hero is defeat. He need a time...'
+            self.message[KhanGameController.MESSAGE_KEY] = 'Hero is defeat.\n He need a time...'
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.OK
             self.step = self.NEW_STEP
             return
@@ -270,7 +317,8 @@ class KhanGameController:
             return
         elif self.step == self.BATTLE_END:
             if self.hero.health == 0 or self.battle_result.winner != self.hero:
-                self.time_to_rescue = datetime.now() + timedelta(seconds=20)
+                self.time_to_rescue = datetime.now() + timedelta(seconds=10)
+                self.room.discovered_bandits.remove(self.room[new_cell].char_here)
                 self.mode = self.MAP
                 self.step = self.MOVE
             else:
@@ -310,6 +358,8 @@ class KhanGameController:
             return
         # Сценарий с бандитом
         elif self.room[self.new_cell].char_here:
+            if self.room[self.new_cell].char_here not in self.room.discovered_bandits:
+                self.room.discovered_bandits.append(self.room[self.new_cell].char_here)
             self.mode = self.MESSAGE
             self.message[KhanGameController.MESSAGE_KEY] = 'Bandit. Battle?'
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
@@ -317,7 +367,7 @@ class KhanGameController:
             return
         # Сценарий с пустой ячейкой
         elif self.room[self.new_cell].entity_type == EntityTypes.EMPTY \
-                or self.room[self.new_cell].entity_type == EntityTypes.ACTIVE_ALTAR\
+                or self.room[self.new_cell].entity_type == EntityTypes.ACTIVE_ALTAR \
                 or self.room[self.new_cell].entity_type == EntityTypes.ENTRY_POINT:
             self.step = self.END
             return

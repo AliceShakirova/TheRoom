@@ -1,7 +1,7 @@
 """Модуль описывает класс PyxelDisplay, позволяющий использовать графичекий движок Pyxel для отображения игры"""
 import pyxel
 from Controllers.khan_controller import KhanGameController
-from Entities.room import Room
+from Entities.frame import Frame
 from Entities.entity_types import EntityTypes
 from Entities.fow_mode import FowMode
 
@@ -62,7 +62,8 @@ class PyxelDisplay:
         if self.frame.mode == self.QUIT:
             pyxel.quit()
 
-        inputs = None
+        none = None
+        inputs = none
         if pyxel.btn(pyxel.KEY_UP) or pyxel.btn(pyxel.KEY_W) or \
                 pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_UP):
             inputs = self.UP
@@ -90,35 +91,41 @@ class PyxelDisplay:
     def draw(self):
         """Метод draw отрисовывает конкретный кадр"""
         self.frame = self.controller.get_current_frame()
+        self.map = self.frame.room
         if self.frame.mode in [self.MAP, self.MESSAGE]:
             pyxel.cls(0)
             y = 0
-            col = 0
             for row in self.map:
                 x = 0
                 y += 11
                 for cell in row:
-                    if cell.entity_type == EntityTypes.ENTRY_POINT:
-                        col = 4
-                    elif self.smoke and cell.fow == FowMode.SHOWED:
-                        col = 7
+                    col0 = 0
+                    col1 = 0
+                    if cell.building == Frame.ENTRY_POINT:
+                        col0 = 4
+                    elif self.smoke and cell.building == Frame.FOW:
+                        col0 = 7
+                        col1 = 8
                     else:
-                        if cell.entity_type == EntityTypes.EMPTY:
-                            col = 13
-                        elif cell.entity_type == EntityTypes.EXIT:
-                            col = 12
-                        elif cell.entity_type == EntityTypes.ALTAR:
-                            col = 3
-                        elif cell.entity_type == EntityTypes.ACTIVE_ALTAR:
-                            col = 11
-                        elif cell.entity_type == EntityTypes.WATER_OF_LIFE:
-                            col = 6
-                    pyxel.rect(x, y, 9, 9, col)
-                    if cell.hero_here:
-                        col = 15
-                    elif cell.char_here and (not self.smoke or cell.fow == FowMode.REVEALED):
-                        col = 8
-                    pyxel.circ(x + 4, y + 4, 4, col)
+                        if cell.building == Frame.EMPTY:
+                            col0 = 13
+                        elif cell.building == Frame.EXIT:
+                            col0 = 12
+                        elif cell.building == Frame.ALTAR:
+                            col0 = 3
+                        elif cell.building == Frame.ACTIVE_ALTAR:
+                            col0 = 11
+                        elif cell.building == Frame.WATER_OF_LIFE:
+                            col0 = 6
+                    pyxel.rect(x, y, 9, 9, col0)
+                    if cell.unit == Frame.HERO:
+                        col0 = 15
+                    elif cell.unit == Frame.BANDIT and not cell.building == Frame.FOW:
+                        col0 = 8
+                    pyxel.circ(x + 4, y + 4, 4, col0)
+                    if cell.unit == Frame.FOW_BLOCKED:
+                        pyxel.line(x + 1, y + 1, x + 7, y + 7, col1)
+                        pyxel.line(x + 7, y + 1, x + 1, y + 7, col1)
                     x += 11
 
             hero_status = 'HERO\nHealth = {}/{}\nArmor = {}\nDamage = {}'.format(self.frame.hero.health,

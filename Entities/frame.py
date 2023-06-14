@@ -13,6 +13,18 @@ class Frame:
     NO = 1
     OK = 2
 
+    # Графические объекты
+    FOW = 0
+    FOW_BLOCKED = 1
+    ENTRY_POINT = 2
+    EXIT = 3
+    ALTAR = 4
+    ACTIVE_ALTAR = 5
+    WATER_OF_LIFE = 6
+    EMPTY = 7
+    BANDIT = 8
+    HERO = 9
+
     def __init__(self, lvl=int, room=None, hero=None, mode=None, message={}, old_cell=None, new_cell=None, smoke=True,
                  battle_result=None):
     # В дальнейшем этот атрибут будет браться из меню или по прохождении уровней обновляться, пока так
@@ -25,3 +37,4 @@ class Frame:
         self.old_cell = old_cell
         self.new_cell = new_cell
         self.battle_result = battle_result
+
