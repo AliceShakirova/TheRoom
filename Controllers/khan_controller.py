@@ -111,7 +111,7 @@ class KhanGameController:
         bandits = random.choices(self.room_creator.pointlist, k=(lvl * Character.ENEMY_COUNT_MULTIPLIER))
         for tup in bandits:
             if self.room[tup].entity_type == EntityTypes.EMPTY:
-                self.room[tup].char_here = Character(lvl, hero=False)
+                self.room[tup].char_here = Character(lvl-1, hero=False)
                 self.get_blocked_cell(tup, self.room[tup].char_here)
         water_of_life = random.choices(self.room_creator.pointlist, k=(lvl * Character.ENEMY_COUNT_MULTIPLIER // 2))
         for tup in water_of_life:
@@ -139,6 +139,7 @@ class KhanGameController:
         return self.last_frame
 
     def get_last_frame(self):
+        """"""
         room = []
         x = 0
         for row in self.room:
@@ -216,8 +217,10 @@ class KhanGameController:
                 if self.room[self.new_cell].fow == FowMode.SHOWED and enemy_discovered:
                     self.step = self.NEW_STEP
                     self.mode = self.MESSAGE
-                    self.message = {self.MESSAGE_KEY: 'The bandit is nearby\n and he is vigilant',
+                    self.message = {self.MESSAGE_KEY: 'Бандит рядом, и он бдит',
                                     self.MESSAGE_MODE_KEY: self.OK}
+                    """self.message = {self.MESSAGE_KEY: 'The bandit is nearby and he is vigilant',
+                                    self.MESSAGE_MODE_KEY: self.OK}"""
                     return
 
             self.room[self.new_cell].fow = FowMode.REVEALED
@@ -230,8 +233,10 @@ class KhanGameController:
         else:
             self.step = self.NEW_STEP
             self.mode = self.MESSAGE
-            self.message = {KhanGameController.MESSAGE_KEY: 'You can\'t leave the\n playing field',
+            self.message = {KhanGameController.MESSAGE_KEY: 'Нельзя выходить за пределы игрового поля',
                             KhanGameController.MESSAGE_MODE_KEY: self.OK}
+            """self.message = {KhanGameController.MESSAGE_KEY: 'You can\'t leave the playing field',
+                            KhanGameController.MESSAGE_MODE_KEY: self.OK}"""
             return
 
     def get_blocked_cell(self, tup, bandit):
@@ -250,7 +255,8 @@ class KhanGameController:
         """Метод hero_live в случае наступления нужного времени (time_to_rescue) оживляет героя"""
         if self.time_to_rescue > datetime.now():
             self.mode = self.MESSAGE
-            self.message[KhanGameController.MESSAGE_KEY] = 'Hero is defeat.\n He need a time...'
+            # self.message[KhanGameController.MESSAGE_KEY] = 'Hero is defeat.\n He need a time...'
+            self.message[KhanGameController.MESSAGE_KEY] = 'Герой повержен. Ему нужно время...'
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.OK
             self.step = self.NEW_STEP
             return
@@ -333,7 +339,8 @@ class KhanGameController:
         # Сценарий с алтарем
         if self.room[self.new_cell].entity_type == EntityTypes.ALTAR:
             self.mode = self.MESSAGE
-            self.message[KhanGameController.MESSAGE_KEY] = 'Altar. Activate?'
+            # self.message[KhanGameController.MESSAGE_KEY] = 'Altar. Activate?'
+            self.message[KhanGameController.MESSAGE_KEY] = 'Алтарь. Активировать?'
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
             self.step = self.ALTAR
             return
@@ -342,7 +349,8 @@ class KhanGameController:
         elif self.room[self.new_cell].entity_type == EntityTypes.EXIT:
             if self.room.active_altar == self.room.ACTIVE_ALL_ALTAR:
                 self.mode = self.MESSAGE
-                self.message[KhanGameController.MESSAGE_KEY] = 'Finish?'
+                # self.message[KhanGameController.MESSAGE_KEY] = 'Finish?'
+                self.message[KhanGameController.MESSAGE_KEY] = 'На выход?'
                 self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
                 self.step = self.EXIT
                 return
@@ -352,7 +360,8 @@ class KhanGameController:
         # Сценарий с живой водой
         elif self.room[self.new_cell].entity_type == EntityTypes.WATER_OF_LIFE:
             self.mode = self.MESSAGE
-            self.message[KhanGameController.MESSAGE_KEY] = 'Water of life. Drink?'
+            # self.message[KhanGameController.MESSAGE_KEY] = 'Water of life. Drink?'
+            self.message[KhanGameController.MESSAGE_KEY] = 'Источник живой воды. Исцелиться?'
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
             self.step = self.WATER
             return
@@ -361,7 +370,8 @@ class KhanGameController:
             if self.room[self.new_cell].char_here not in self.room.discovered_bandits:
                 self.room.discovered_bandits.append(self.room[self.new_cell].char_here)
             self.mode = self.MESSAGE
-            self.message[KhanGameController.MESSAGE_KEY] = 'Bandit. Battle?'
+            # self.message[KhanGameController.MESSAGE_KEY] = 'Bandit. Battle?'
+            self.message[KhanGameController.MESSAGE_KEY] = 'На пути стоит бандит. Дать бой?'
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
             self.step = self.BATTLE
             return
