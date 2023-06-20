@@ -1,7 +1,6 @@
 """Модуль khan_controller описывает основной класс KhanGameController, обрабатывающий всю игровую логику.
 """
 import random
-import time
 from datetime import datetime, timedelta
 
 from Entities.frame import Frame
@@ -12,7 +11,6 @@ from Entities.building import Building
 from Entities.character import Character
 from Entities.room_creator import RoomCreator
 from Entities.drawing_cell import DrawingCell
-from Entities.room import Room
 
 
 class KhanGameController:
@@ -34,7 +32,7 @@ class KhanGameController:
         process_key(button):
             метод передает нажатую кнопку на обработку в нужный метод, а затем фиксирует все произведенные изменения
         get_current_frame():
-            метод вызывается из контроллера графического интерфейса для получения последних изменений для отрисовки кадра
+            метод вызывается из контроллера графического интерфейса для получения последних изменений в кадре
     """
 
     # Constants
@@ -62,8 +60,8 @@ class KhanGameController:
     ALTAR = 1
     EXIT = 2
     WATER = 4
-    BATTLE = 3
-    BATTLE_END = 5
+    FIGHT = 3
+    FIGHT_END = 5
     END = 6
     NEW_STEP = 7
 
@@ -84,10 +82,6 @@ class KhanGameController:
     time_to_rescue = datetime.max
 
     def __init__(self):
-        """
-        Метод-конструктор, создающий объект, связывая его с определенным представителем EngineConnector
-        :param ec: представитель EngineConnector
-        """
         self.battle = Battle()
         self.last_frame = Frame(2)
         self.old_cell = None
@@ -111,7 +105,7 @@ class KhanGameController:
         bandits = random.choices(self.room_creator.pointlist, k=(lvl * Character.ENEMY_COUNT_MULTIPLIER))
         for tup in bandits:
             if self.room[tup].entity_type == EntityTypes.EMPTY:
-                self.room[tup].char_here = Character(lvl-1, hero=False)
+                self.room[tup].char_here = Character(lvl, hero=False)
                 self.get_blocked_cell(tup, self.room[tup].char_here)
         water_of_life = random.choices(self.room_creator.pointlist, k=(lvl * Character.ENEMY_COUNT_MULTIPLIER // 2))
         for tup in water_of_life:
@@ -120,7 +114,7 @@ class KhanGameController:
         self.mode = self.MAP
         self.last_frame = self.get_last_frame()
 
-    def process_key(self, button, message=None):
+    def process_key(self, button):
         """Метод process_key в зависимости от режима отрисовки (mode) передает нажатую кнопку в нужный метод, а затем
         фиксирует все произведенные изменения в виде Frame
         :parameter button: int, соответствует введенной пользователем клавише"""
@@ -287,7 +281,7 @@ class KhanGameController:
                 self.message[KhanGameController.MESSAGE_MODE_KEY] = self.NO
         if self.message[KhanGameController.MESSAGE_MODE_KEY] == self.NO:
             if button == self.ENTER:
-                if self.step == self.BATTLE:
+                if self.step == self.FIGHT:
                     self.mode = self.MAP
                     self.step = self.MOVE
                     return
@@ -316,19 +310,21 @@ class KhanGameController:
             self.hero.health = self.start_health
             self.end_of_step()
             return
-        elif self.step == self.BATTLE:
+        elif self.step == self.FIGHT:
             self.battle_result = self.battle.fight(self.hero, self.room[new_cell].char_here)
             self.mode = self.BATTLE
-            self.step = self.BATTLE_END
+            self.step = self.FIGHT_END
             return
-        elif self.step == self.BATTLE_END:
+        elif self.step == self.FIGHT_END:
             if self.hero.health == 0 or self.battle_result.winner != self.hero:
                 self.time_to_rescue = datetime.now() + timedelta(seconds=10)
-                self.room.discovered_bandits.remove(self.room[new_cell].char_here)
+                if self.battle_result.winner == self.hero:
+                    self.room.discovered_bandits.remove(self.room[new_cell].char_here)
                 self.mode = self.MAP
                 self.step = self.MOVE
+                return
             else:
-                self.end_of_step()
+                self.room.discovered_bandits.remove(self.room[new_cell].char_here)
         elif self.step == self.NEW_STEP:
             self.step = self.MOVE
             return
@@ -344,7 +340,6 @@ class KhanGameController:
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
             self.step = self.ALTAR
             return
-
         # Сценарий с выходом
         elif self.room[self.new_cell].entity_type == EntityTypes.EXIT:
             if self.room.active_altar == self.room.ACTIVE_ALL_ALTAR:
@@ -359,12 +354,16 @@ class KhanGameController:
                 return
         # Сценарий с живой водой
         elif self.room[self.new_cell].entity_type == EntityTypes.WATER_OF_LIFE:
-            self.mode = self.MESSAGE
-            # self.message[KhanGameController.MESSAGE_KEY] = 'Water of life. Drink?'
-            self.message[KhanGameController.MESSAGE_KEY] = 'Источник живой воды. Исцелиться?'
-            self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
-            self.step = self.WATER
-            return
+            if self.hero.health < self.start_health:
+                self.mode = self.MESSAGE
+                # self.message[KhanGameController.MESSAGE_KEY] = 'Water of life. Drink?'
+                self.message[KhanGameController.MESSAGE_KEY] = 'Источник живой воды. Исцелиться?'
+                self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
+                self.step = self.WATER
+                return
+            else:
+                self.step = self.END
+                return
         # Сценарий с бандитом
         elif self.room[self.new_cell].char_here:
             if self.room[self.new_cell].char_here not in self.room.discovered_bandits:
@@ -373,7 +372,7 @@ class KhanGameController:
             # self.message[KhanGameController.MESSAGE_KEY] = 'Bandit. Battle?'
             self.message[KhanGameController.MESSAGE_KEY] = 'На пути стоит бандит. Дать бой?'
             self.message[KhanGameController.MESSAGE_MODE_KEY] = self.YES
-            self.step = self.BATTLE
+            self.step = self.FIGHT
             return
         # Сценарий с пустой ячейкой
         elif self.room[self.new_cell].entity_type == EntityTypes.EMPTY \

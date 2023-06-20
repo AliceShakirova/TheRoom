@@ -1,12 +1,9 @@
 """Модуль описывает класс PyxelDisplay, позволяющий использовать графичекий движок Pyxel для отображения игры"""
 import os
-
 import pyxel
 from pyxelunicode import PyxelUnicode
 from Controllers.khan_controller import KhanGameController
 from Entities.frame import Frame
-from Entities.entity_types import EntityTypes
-from Entities.fow_mode import FowMode
 
 
 class PyxelDisplay:
@@ -106,7 +103,6 @@ class PyxelDisplay:
     # отрисовка счета
     battle_score_rect_width = 60
     battle_score_rectb_width = battle_score_rect_width + 2
-
     battle_score_rect_x = ((battle_hero_status_rect_x + battle_status_rectb_width + battle_bandit_status_rect_x)
                            // 2) - (battle_score_rectb_width // 2)
     battle_score_rect_y = battle_status_rect_y + battle_status_rectb_height + 10
