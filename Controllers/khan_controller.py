@@ -3,6 +3,7 @@
 import random
 from datetime import datetime, timedelta
 
+from Controllers.menu_controller import Menu
 from Entities.frame import Frame
 from Entities.entity_types import EntityTypes
 from Entities.fow_mode import FowMode
@@ -42,13 +43,15 @@ class KhanGameController:
     LEFT = 3
     RIGHT = 4
     ENTER = 5
+    ESCAPE = 6
 
     # Режимы отрисовки
     MENU = 0
     MAP = 1
     MESSAGE = 2
     BATTLE = 3
-    QUIT = 4
+    QUIT_THE_LEVEL = 4
+    QUIT_THE_GAME = 5
 
     # Режимы диалогого окна
     YES = 0
@@ -75,7 +78,8 @@ class KhanGameController:
     hero = None
     start_health = 0
     battle = None
-    smoke = True
+    smoke = False
+    menu = None
     mode = None
     battle_result = None
     message = {MESSAGE_KEY: '', MESSAGE_MODE_KEY: OK}
@@ -83,11 +87,13 @@ class KhanGameController:
 
     def __init__(self):
         self.battle = Battle()
-        self.last_frame = Frame(2)
+        self.menu = Menu(self.start_new_game, self.quit_the_game, self.return_to_level, self.leave_the_level)
         self.old_cell = None
-        self.new_cell = None
         self.step = self.MOVE
         self.room_creator = RoomCreator()
+        self.mode = self.MENU
+        self.last_frame = Frame(0, mode=self.mode, smoke=True, menu_btns=self.menu.menu_btns,
+                                menu_select=self.menu.menu_btns[self.menu.select], in_game=self.menu.in_game)
 
     def start_new_game(self, lvl):
         """Метод start_new_game начинает новую игру, инициирует создание основной карты (room), основного
@@ -99,6 +105,7 @@ class KhanGameController:
         self.start_health = self.hero.start_health
         self.room[self.room.entry_point].hero_here = self.hero
         self.room.hero_cell = self.room.entry_point
+        self.new_cell = None
         self.old_cell = self.room.hero_cell
 
         # Генерация и размещение бандитов и источников живой воды
@@ -118,7 +125,14 @@ class KhanGameController:
         """Метод process_key в зависимости от режима отрисовки (mode) передает нажатую кнопку в нужный метод, а затем
         фиксирует все произведенные изменения в виде Frame
         :parameter button: int, соответствует введенной пользователем клавише"""
-        if self.mode == self.MAP:
+        if button == self.ESCAPE:
+            if self.mode == self.MAP:
+                self.mode = self.MENU
+            elif self.mode == self.MENU:
+                self.mode = self.MAP
+        if self.mode == self.MENU:
+            self.menu.process_key(button)
+        elif self.mode == self.MAP:
             self.new_move(button)
         elif self.mode == self.MESSAGE:
             self.process_messagebox_key(button)
@@ -136,45 +150,51 @@ class KhanGameController:
         """"""
         room = []
         x = 0
-        for row in self.room:
-            room.append([])
-            y = 0
-            for cell in row:
-                room[x].append(DrawingCell())
-                building = None
-                unit = None
-                if cell.entity_type == EntityTypes.ENTRY_POINT:
-                    building = Frame.ENTRY_POINT
-                elif self.smoke and cell.fow == FowMode.SHOWED:
-                    building = Frame.FOW
-                else:
-                    if cell.entity_type == EntityTypes.EMPTY:
-                        building = Frame.EMPTY
-                    elif cell.entity_type == EntityTypes.EXIT:
-                        building = Frame.EXIT
-                    elif cell.entity_type == EntityTypes.ALTAR:
-                        building = Frame.ALTAR
-                    elif cell.entity_type == EntityTypes.ACTIVE_ALTAR:
-                        building = Frame.ACTIVE_ALTAR
-                    elif cell.entity_type == EntityTypes.WATER_OF_LIFE:
-                        building = Frame.WATER_OF_LIFE
-                if cell.hero_here:
-                    unit = Frame.HERO
-                elif cell.char_here and (cell.fow == FowMode.REVEALED or not self.smoke):
-                    unit = Frame.BANDIT
-                elif cell.blocked_by_enemy:
-                    for enemy in cell.blocked_by_enemy:
-                        if cell.fow == FowMode.SHOWED:
-                            if enemy in self.room.discovered_bandits:
-                                unit = Frame.FOW_BLOCKED
-                                break
-                room[x][y].building = building
-                room[x][y].unit = unit
-                y += 1
-            x += 1
+        if self.room:
+            for row in self.room:
+                room.append([])
+                y = 0
+                for cell in row:
+                    room[x].append(DrawingCell())
+                    building = None
+                    unit = None
+                    if cell.entity_type == EntityTypes.ENTRY_POINT:
+                        building = Frame.ENTRY_POINT
+                    elif self.smoke and cell.fow == FowMode.SHOWED:
+                        building = Frame.FOW
+                    else:
+                        if cell.entity_type == EntityTypes.EMPTY:
+                            building = Frame.EMPTY
+                        elif cell.entity_type == EntityTypes.EXIT:
+                            building = Frame.EXIT
+                        elif cell.entity_type == EntityTypes.ALTAR:
+                            building = Frame.ALTAR
+                        elif cell.entity_type == EntityTypes.ACTIVE_ALTAR:
+                            building = Frame.ACTIVE_ALTAR
+                        elif cell.entity_type == EntityTypes.WATER_OF_LIFE:
+                            building = Frame.WATER_OF_LIFE
+                    if cell.hero_here:
+                        unit = Frame.HERO
+                    elif cell.char_here and (cell.fow == FowMode.REVEALED or not self.smoke):
+                        unit = Frame.BANDIT
+                    elif cell.blocked_by_enemy:
+                        for enemy in cell.blocked_by_enemy:
+                            if cell.fow == FowMode.SHOWED:
+                                if enemy in self.room.discovered_bandits:
+                                    unit = Frame.FOW_BLOCKED
+                                    break
+                    room[x][y].building = building
+                    room[x][y].unit = unit
+                    y += 1
+                x += 1
 
+        if self.menu.in_game:
+            self.menu.menu_btns = self.menu.game_menu
+        else:
+            self.menu.menu_btns = self.menu.main_menu
         self.last_frame = Frame(self.lvl, room, self.hero, self.mode, self.message, self.old_cell, self.new_cell,
-                                self.smoke, self.battle_result)
+                                self.smoke, self.battle_result, self.menu.menu_btns,
+                                self.menu.menu_btns[self.menu.select], self.menu.in_game)
         return self.last_frame
 
     def get_cell_to_move(self, button):
@@ -198,7 +218,8 @@ class KhanGameController:
             return
         else:
             self.get_cell_to_move(button)
-
+        if not self.new_cell:
+            return
         if self.new_cell[0] in list(range(self.room.side_len)) and self.new_cell[1] in list(range(self.room.side_len)):
             enemy_discovered = None
             if self.room[self.new_cell].blocked_by_enemy:
@@ -264,14 +285,15 @@ class KhanGameController:
         if self.message[KhanGameController.MESSAGE_MODE_KEY] == self.OK:
             if button == self.ENTER:
                 self.move_hero()
-                if self.mode == self.QUIT:
+                if self.mode == self.QUIT_THE_LEVEL:
                     return
                 self.mode = self.MAP
                 return
         if self.message[KhanGameController.MESSAGE_MODE_KEY] == self.YES:
             if button == self.ENTER:
                 self.move_hero()
-                if self.mode == self.QUIT:
+                if self.mode == self.QUIT_THE_LEVEL:
+                    self.mode = self.MENU
                     return
                 elif self.mode == self.BATTLE:
                     return
@@ -302,7 +324,8 @@ class KhanGameController:
             return
         elif self.step == self.EXIT:
             self.end_of_step()
-            self.mode = self.QUIT
+            self.mode = self.QUIT_THE_LEVEL
+            self.menu.in_game = False
             return
 
         elif self.step == self.WATER:
@@ -394,9 +417,21 @@ class KhanGameController:
         self.step = self.MOVE
         self.room.hero_cell = self.new_cell
         self.room[self.last_frame.old_cell].hero_here = False
-        self.room[self.new_cell].hero_here = self.hero
-        self.old_cell = self.new_cell
+        if self.new_cell:
+            self.room[self.new_cell].hero_here = self.hero
+            self.old_cell = self.new_cell
         self.mode = self.MAP
+
+    def quit_the_game(self):
+        self.mode = self.QUIT_THE_GAME
+
+    def return_to_level(self):
+        self.mode = self.MAP
+
+    def leave_the_level(self):
+        self.step = self.EXIT
+        self.move_hero()
+        self.mode = self.MENU
 
 
 if __name__ == '__main__':

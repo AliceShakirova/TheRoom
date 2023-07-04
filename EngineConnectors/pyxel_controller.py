@@ -30,13 +30,15 @@ class PyxelDisplay:
     LEFT = 3
     RIGHT = 4
     ENTER = 5
+    ESCAPE = 6
 
     # Режимы работы метода draw
     MENU = 0
     MAP = 1
     MESSAGE = 2
     BATTLE = 3
-    QUIT = 4
+    QUIT_THE_LEVEL = 4
+    QUIT_THE_GAME = 5
 
     # Режимы диалогого окна
     YES = 0
@@ -50,6 +52,10 @@ class PyxelDisplay:
     side_of_cell = (init_width/20) - 1  # -1, чтобы был центр, где был бы центр круга или крестика
     circ_radius = (side_of_cell - 5) / 2  # чтобы вписать в квадрат и осталось еще 2 пикселя с каждой стороны
     start_next_cell = side_of_cell + 4
+    color_of_selected_text = 9
+    color_of_unselected_text = 15
+    col_of_selected_rect = 10
+    col_of_unselected_rect = 13
     # отрисовка статуса
     status_rect_x = 256
     status_rect_y = 18
@@ -118,7 +124,6 @@ class PyxelDisplay:
         # pyxel.mouse(True)
         self.controller = controller
         self.frame = self.controller.last_frame
-        self.map = self.frame.room
         self.smoke = self.frame.smoke
         self.number = 0
         self.prev_inputs = None
@@ -131,7 +136,7 @@ class PyxelDisplay:
     def update(self):
         """Метод update принимает введенную пользователем клавишу"""
         # if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)
-        if self.frame.mode == self.QUIT:
+        if self.frame.mode == self.QUIT_THE_GAME:
             pyxel.quit()
 
         none = None
@@ -150,6 +155,8 @@ class PyxelDisplay:
             inputs = self.RIGHT
         elif pyxel.btn(pyxel.KEY_KP_ENTER) or pyxel.btn(pyxel.KEY_SPACE):
             inputs = self.ENTER
+        elif pyxel.btn(pyxel.KEY_Q):
+            inputs = self.ESCAPE
 
         if inputs:
             self.prev_inputs = inputs
@@ -167,6 +174,9 @@ class PyxelDisplay:
         if self.frame.mode in [self.MAP, self.MESSAGE]:
             self.draw_map()
 
+        elif self.frame.mode == self.MENU:
+            self.draw_menu()
+
         elif self.frame.mode == self.BATTLE:
             self.draw_battle()
 
@@ -176,10 +186,11 @@ class PyxelDisplay:
         else:
             return
 
-        if self.frame.mode == self.QUIT:
-            pyxel.rectb(29, 59, 100, 50, 7)
-            pyxel.rect(30, 60, 98, 48, 13)
-            pyxel.text(40, 70, 'Goodbye', 15)
+        if self.frame.mode == self.QUIT_THE_LEVEL:
+            text = self.get_formated_message('До новых встреч', self.mb_text_max)
+            pyxel.rectb(self.mb_rectb_x, self.mb_rectb_y, self.mb_rectb_width, 30, 7)
+            pyxel.rect(self.mb_rect_x, self.mb_rect_y, self.mb_rect_width, 32, 13)
+            pyxel.text(self.mb_text_x, self.mb_text_y, str(text), 15)
 
     def draw_map(self):
         """Метод описывает непосредственную отрисовку актуальной карты"""
@@ -225,6 +236,43 @@ class PyxelDisplay:
         pyxel.rect(self.status_rect_x, self.status_rect_y, self.status_rect_width, self.status_rect_height, 13)
         self.pyuni.text(self.status_text_x, self.status_text_y, hero_status, 15)
 
+    def draw_menu(self):
+        pyxel.cls(0)
+        buttons = []
+        for btn in self.frame.menu_btns:
+            buttons.append(btn.text)
+        select = self.frame.menu_select
+
+        btn_rect_x = self.init_width//2
+        btn_rectb_x = btn_rect_x - 1
+        btn_rect_y = 40
+        btn_rectb_y = btn_rect_y - 1
+        all_btn_rect_width = self.init_width//3
+        all_btn_rectb_width = all_btn_rect_width + 2
+        all_btn_rect_height = 30
+        all_btn_rectb_height = all_btn_rect_height + 2
+        btn_text_y = btn_rect_y + all_btn_rectb_height//4 + 2
+        btn_text_x = btn_rect_x + 1
+
+        x = 2  # множитель для вычисления высоты, на которой рисуется следующая кнопка (btn_rect_y)
+        for button in buttons:
+            if button == select.text:
+                col_of_rect = self.col_of_selected_rect
+                col_of_text = self.color_of_selected_text
+            else:
+                col_of_rect = self.col_of_unselected_rect
+                col_of_text = self.color_of_unselected_text
+            btn_text = self.get_formated_message(button, 23)
+            pyxel.rectb(btn_rectb_x, btn_rectb_y, all_btn_rectb_width, all_btn_rectb_height, 7)
+            pyxel.rect(btn_rect_x, btn_rect_y, all_btn_rect_width, all_btn_rect_height, col_of_rect)
+            self.pyuni.text(btn_text_x, btn_text_y, btn_text, col_of_text)
+            btn_rect_x += 10
+            btn_rectb_x = btn_rect_x - 1
+            btn_rect_y += all_btn_rect_height * x
+            btn_rectb_y = btn_rect_y - 1
+            btn_text_y = btn_rect_y + all_btn_rectb_height//4 + 2
+            btn_text_x = btn_rect_x + 1
+
     def draw_battle(self):
         """Метод описывает рассчет внутренних переменных и непосредственную отрисовку боя между героем и бандитом"""
         pyxel.cls(0)
@@ -262,7 +310,7 @@ class PyxelDisplay:
 
     def draw_messagebox(self, message, key):
         """Метод описывает рассчет внутренних переменных и непосредственную отрисовку messagebox"""
-        message = self.get_formated_message(message)
+        message = self.get_formated_message(message, self.mb_text_max)
         # отрисовка кнопок messagebox
         mb_rect_height = len(message) * 15 + self.all_btn_rect_height + 20
         mb_rectb_height = mb_rect_height + 2
@@ -280,38 +328,43 @@ class PyxelDisplay:
         if key == self.OK:
             # кнопка 'OK'
             pyxel.rectb(self.ok_rectb_x, all_btn_rectb_y, all_btn_rectb_width, all_btn_rectb_height, 7)
-            pyxel.rect(self.ok_rect_x, all_btn_rect_y, self.all_btn_rect_width, self.all_btn_rect_height, 13)
-            self.pyuni.text(self.ok_text_x, all_btn_text_y, 'OK', 15)
+            pyxel.rect(self.ok_rect_x, all_btn_rect_y, self.all_btn_rect_width, self.all_btn_rect_height,
+                       self.col_of_unselected_rect)
+            self.pyuni.text(self.ok_text_x, all_btn_text_y, 'OK', self.color_of_unselected_text)
         elif key == self.YES:
             # кнопка 'ДА'
             pyxel.rectb(self.yes_rectb_x, all_btn_rectb_y, all_btn_rectb_width, all_btn_rectb_height, 7)
-            pyxel.rect(self.yes_rect_x, all_btn_rect_y, self.all_btn_rect_width, self.all_btn_rect_height, 10)
-            self.pyuni.text(self.yes_text_x, all_btn_text_y, 'ДА', 9)
+            pyxel.rect(self.yes_rect_x, all_btn_rect_y, self.all_btn_rect_width, self.all_btn_rect_height,
+                       self.col_of_selected_rect)
+            self.pyuni.text(self.yes_text_x, all_btn_text_y, 'ДА', self.color_of_selected_text)
             # кнопка 'НЕТ'
             pyxel.rectb(self.no_rectb_x, all_btn_rectb_y, all_btn_rectb_width, all_btn_rectb_height, 7)
-            pyxel.rect(self.no_rect_x, all_btn_rect_y, self.all_btn_rect_width, self.all_btn_rect_height, 13)
-            self.pyuni.text(self.no_text_x, all_btn_text_y, 'НЕТ', 15)
+            pyxel.rect(self.no_rect_x, all_btn_rect_y, self.all_btn_rect_width, self.all_btn_rect_height,
+                       self.col_of_unselected_rect)
+            self.pyuni.text(self.no_text_x, all_btn_text_y, 'НЕТ', self.color_of_unselected_text)
         elif key == self.NO:
             # кнопка 'ДА'
             pyxel.rectb(self.yes_rectb_x, all_btn_rectb_y, all_btn_rectb_width, all_btn_rectb_height, 7)
-            pyxel.rect(self.yes_rect_x, all_btn_rect_y, self.all_btn_rect_width, self.all_btn_rect_height, 13)
-            self.pyuni.text(self.yes_text_x, all_btn_text_y, 'ДА', 15)
+            pyxel.rect(self.yes_rect_x, all_btn_rect_y, self.all_btn_rect_width, self.all_btn_rect_height,
+                       self.col_of_unselected_rect)
+            self.pyuni.text(self.yes_text_x, all_btn_text_y, 'ДА', self.color_of_unselected_text)
             # кнопка 'НЕТ'
             pyxel.rectb(self.no_rectb_x, all_btn_rectb_y, all_btn_rectb_width, all_btn_rectb_height, 7)
-            pyxel.rect(self.no_rect_x, all_btn_rect_y, self.all_btn_rect_width, self.all_btn_rect_height, 10)
-            self.pyuni.text(self.no_text_x, all_btn_text_y, 'НЕТ', 9)
+            pyxel.rect(self.no_rect_x, all_btn_rect_y, self.all_btn_rect_width, self.all_btn_rect_height,
+                       self.col_of_selected_rect)
+            self.pyuni.text(self.no_text_x, all_btn_text_y, 'НЕТ', self.color_of_selected_text)
 
-    def get_formated_message(self, string):
+    def get_formated_message(self, string, max_lenght):
         """Метод динамически вычисляет расположение слов строки в messagebox"""
         string_to_draw = []
         pre_string = ''
         for string in string.split(' '):
-            if len(pre_string + string) < self.mb_text_max:
+            if len(pre_string + string) < max_lenght:
                 pre_string = pre_string + string + ' '
             else:
-                string_to_draw.append(pre_string.center(self.mb_text_max))
+                string_to_draw.append(pre_string.center(max_lenght))
                 pre_string = string + ' '
-        string_to_draw.append(pre_string.center(self.mb_text_max))
+        string_to_draw.append(pre_string.center(max_lenght))
         return string_to_draw
 
 

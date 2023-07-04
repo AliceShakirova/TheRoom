@@ -30,6 +30,7 @@ class RoomCreator:
         """
         room = Room()
         side = list(range(RoomCreator.level_room[lvl]))
+        room.rows.clear()
         for x in side:
             room.rows.append([])
             for y in side:
@@ -69,6 +70,7 @@ class RoomCreator:
         room.rows[room.entry_point[0]][room.entry_point[1]] = Cell(Building.ENTRY_POINT, FowMode.REVEALED)
 
         # Создаем список кортежей
+        self.pointlist = []
         for x in range(room.side_len):
             for y in range(room.side_len):
                 self.pointlist.append((x, y))

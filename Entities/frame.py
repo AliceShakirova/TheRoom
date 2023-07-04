@@ -26,8 +26,7 @@ class Frame:
     HERO = 9
 
     def __init__(self, lvl=int, room=None, hero=None, mode=None, message={}, old_cell=None, new_cell=None, smoke=True,
-                 battle_result=None):
-    # В дальнейшем этот атрибут будет браться из меню или по прохождении уровней обновляться, пока так
+                 battle_result=None, menu_btns=None, menu_select=None, in_game=False):
         self.level = lvl
         self.room = room
         self.hero = hero
@@ -37,4 +36,7 @@ class Frame:
         self.old_cell = old_cell
         self.new_cell = new_cell
         self.battle_result = battle_result
+        self.menu_btns = menu_btns
+        self.menu_select = menu_select
+        self.in_game = in_game
 
